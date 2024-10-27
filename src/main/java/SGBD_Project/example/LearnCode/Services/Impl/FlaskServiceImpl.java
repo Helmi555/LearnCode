@@ -1,5 +1,6 @@
 package SGBD_Project.example.LearnCode.Services.Impl;
 
+import SGBD_Project.example.LearnCode.Dto.QuestionDto;
 import SGBD_Project.example.LearnCode.Dto.UserQuestionDto;
 import SGBD_Project.example.LearnCode.Dto.UserTopicDto;
 import SGBD_Project.example.LearnCode.Models.Question;
@@ -11,11 +12,16 @@ import SGBD_Project.example.LearnCode.Repositories.UserQuestionRepository;
 import SGBD_Project.example.LearnCode.Repositories.UserRepository;
 import SGBD_Project.example.LearnCode.Repositories.UserTopicRepository;
 import SGBD_Project.example.LearnCode.Services.FlaskService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -23,10 +29,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -51,17 +54,17 @@ public class FlaskServiceImpl implements FlaskService {
 
     /*@PostConstruct
     @Transactional*/
-    public JSONObject sendRequestToFlask(String userId, Set<Integer> topics) {
+    public List<Map<String,Object>> sendRequestToFlask(String userId, Set<Integer> topics) {
         UserEntity user=userRepository.findById(userId).orElse(null);
         if(user==null) {
-            return new JSONObject("User not found with this ID: ",userId);
+            throw new RuntimeException("User not found with this ID: " + userId);
         }
 
         Set<Integer> validTopics=userTopicRepository.findUserTopicsByUserId(userId);
         System.out.println("validTopics: "+validTopics);
         for(Integer topic:topics) {
             if(!validTopics.contains(topic)) {
-                return new JSONObject("Topic not valid: ",topic.toString());
+                throw new RuntimeException("Topic not valid: " + topic.toString());
             }
         }
         Set<UserTopic> userTopics=userTopicRepository.findByUser_Id(userId);
@@ -73,16 +76,13 @@ public class FlaskServiceImpl implements FlaskService {
             userTopicDtos.add(listTopic);
         }
         List<Question> questionsByTopic=questionRepository.findByTopic_IdIn(new ArrayList<>(topics));
-        for(Question question:questionsByTopic) {
-            System.out.println("question "+question.getId());
-        }
+
         List<String> questionIds = questionsByTopic.stream()
                 .map(Question::getId)
                 .collect(Collectors.toList());
 
         List<UserQuestion> userQuestionsList=userQuestionRepository.findByQuestion_IdIn(questionIds);
         List<List<Object>> userQuestionDtos=new ArrayList<>();
-        System.out.println("We are starting");
         for(UserQuestion userQuestion:userQuestionsList) {
                 /*UserQuestionDto userQuestionDto=UserQuestionDto.builder()
                         .topicId(userQuestion.getQuestion().getTopic().getId())
@@ -98,7 +98,6 @@ public class FlaskServiceImpl implements FlaskService {
             listQuestion.add(userQuestion.getRespondingTime());
             userQuestionDtos.add(listQuestion);
         }
-        System.out.println("We are Ending");
 
         // Create JSON arrays for "questions" and "topics"
         JSONArray questionsArray = new JSONArray(userQuestionDtos);
@@ -109,36 +108,53 @@ public class FlaskServiceImpl implements FlaskService {
         payload.put("questions", questionsArray);
         payload.put("topics", topicsArray);
         payload.put("questionQuantity",20);
-        System.out.println("And the payload issssssss  \n"+payload);
+        System.out.println("And the payload is  \n"+payload);
         // Create the JSON payload
-        /*JSONObject payload = new JSONObject();
-        payload.put("user_details", "Some Data");
+
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        // Create request
+        // Create request houni
         HttpEntity<String> request = new HttpEntity<>(payload.toString(), headers);
 
-        // Send POST request to Flask
-        ResponseEntity<String> response = restTemplate.postForEntity(flaskUrl, request, String.class);
+        // Send POST request to Flask microservices
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(flaskUrl, request, String.class);
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("An error occured " + response.getStatusCode());
+            }
+            System.out.println("Response: " + response);
+            //Parcourir les questions
+            List<Map<String,Object>> questionsDtos=new ArrayList<>();
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<Integer> flaskResponse=objectMapper.readValue(response.getBody(), new TypeReference<>() {
+            });
+            for (Integer questionIndice:flaskResponse) {
+                UserQuestion userQuestion=userQuestionsList.get(questionIndice);
+                List<String> propositions=userQuestion.getQuestion().getPropositions();
+                //System.out.println("questionId: "+userQuestion.getQuestion().getId()+" : "+ userQuestionsList.get(questionIndice).getQuestion().getQuestion()+"\n propositions: "+propositions);
+                Map<String, Object> questionMap = new HashMap<>();
+                Map<Integer,String> prop=new HashMap<>();
+                prop.put(1,!propositions.get(0).isBlank()?propositions.get(0):"");
+                prop.put(2,!propositions.get(1).isBlank()?propositions.get(1):"");
+                prop.put(3,!propositions.get(2).isBlank()?propositions.get(2):"");
+                prop.put(4,!propositions.get(3).isBlank()?propositions.get(3):"");
+                questionMap.put("question", userQuestionsList.get(questionIndice).getQuestion().getQuestion());
+                questionMap.put("propositions", prop);
 
-        return response.getBody();*/
-        return payload;
+                questionsDtos.add(questionMap);
+            }
+            return questionsDtos;
+
+        } catch (RestClientException | JsonProcessingException e) {
+            System.out.println("Exception occurred: " + e.getMessage());
+            // Return an empty list in case of an exception
+            return new ArrayList<>();
+        }
+
     }
-}
-
-/*
- * ['correspondance','User_rank','difficulty_level','given','correctness','responding_time']
- *
- *
-
-
-
- {
-
 
 }
 
 
- * */
