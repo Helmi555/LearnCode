@@ -1,10 +1,13 @@
 package SGBD_Project.example.LearnCode.Controllers;
 
+import SGBD_Project.example.LearnCode.Dto.UserDto;
 import SGBD_Project.example.LearnCode.Dto.UserEntityDto;
 import SGBD_Project.example.LearnCode.Models.Topic;
 import SGBD_Project.example.LearnCode.Repositories.UserRepository;
+import SGBD_Project.example.LearnCode.Security.JwtUtil;
 import SGBD_Project.example.LearnCode.Services.TopicService;
 import SGBD_Project.example.LearnCode.Services.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,17 +21,19 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@RequestMapping("/api/v1/users/")
+@RequestMapping("/api/v1/auth/")
 public class AuthController {
 
     UserService userService;
     TopicService topicService;
+    JwtUtil jwtUtil;
 
 
         @Autowired
-        public AuthController(UserService userService, TopicService topicService) {
+        public AuthController(UserService userService, TopicService topicService,JwtUtil jwtUtil) {
             this.userService = userService;
             this.topicService=topicService;
+            this.jwtUtil=jwtUtil;
         }
 
         @PostMapping("signUp")
@@ -83,7 +88,57 @@ public class AuthController {
             }
         }
 
-        @GetMapping("getUserById/{userId}")
+        @PostMapping("signIn")
+        public ResponseEntity<?> signIn(@RequestBody UserEntityDto userEntityDto) {
+            Map<String,Object> msg = new HashMap<>();
+            if(userEntityDto.getEmail().isBlank() || userEntityDto.getPassword().isBlank()) {
+                msg.put("message", "Please check all the fields");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+            }
+            String password = userEntityDto.getPassword();
+            String email = userEntityDto.getEmail();
+            if(!UserEntityDto.isValidEmail(email)){
+                msg.put("message", "Please enter a valid email");
+            }
+            try {
+                String token=userService.signIn(email,password);
+                msg.put("token",token);
+                msg.put("message", "User signed in successfully");
+                return ResponseEntity.status(HttpStatus.OK).body(msg);
+            }
+            catch (Exception e){
+                msg.put("message", "Failed to sign in. "+e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg);
+            }
+        }
+
+    @PostMapping("signOut")
+    public ResponseEntity<?> signOut(HttpServletRequest request){
+            Map<String,Object> msg = new HashMap<>();
+            String authorizationHeader = request.getHeader("Authorization");
+            String token = null;
+
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7);
+        }
+
+        if (token != null) {
+
+            if(userService.signOut(token)) {
+                msg.put("message", "User signed out successfully");
+                return ResponseEntity.status(HttpStatus.OK).body(msg);
+            }
+            else{
+                msg.put("message","User already signed out");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(msg);
+            }
+        }
+        msg.put("message", "User signed out failed");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg);
+    }
+
+
+    @GetMapping("getUserById/{userId}")
         public ResponseEntity<?> getUserById(@PathVariable("userId") String userId){
             Map<String,Object> msg = new HashMap<>();
             if( userId==null|| userId.isBlank() ){
@@ -117,6 +172,7 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg);
             }
         }
+
 
 
         @PostMapping("addListOfUsers")
@@ -181,5 +237,19 @@ public class AuthController {
         }
     }
 
+    @GetMapping("token")
+    public String generateToken() {
+        System.out.println("hiiiiiiiiiii\n");
+        try {
+            String token=jwtUtil.generateToken("helmi@gmail.com");
+            System.out.println(token);
+            System.out.println("is valid tokeeeeeen "+jwtUtil.validateToken("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJoZWxtaUBnbWFpbC5jb20iLCJleHAiOjE3MzA0MTM4MDgsImlhdCI6MTczMDMyNzQwOH0.GVQIFEAnHqFpIsT4HJDMUfyKE5cEzYVjr2UsvtLUBgY","helmi5@gmail.com"));
+            System.out.println("is valid tokeeeeeen "+jwtUtil.validateToken("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJoZWxtaUBnbWFpbC5jb20iLCJleHAiOjE3MzA0MTM4MDgsImlhdCI6MTczMDMyNzQwOH0.GVQIFEAnHqFpIsT4HJDMUfyKE5cEzYVjr2UsvtLUBgY","helmi@gmail.com"));
+            return token;
+        }catch (Exception e){
+            throw  new RuntimeException(e.getMessage());
+        }
 
+    }
 }
+

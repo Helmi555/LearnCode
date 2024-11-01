@@ -1,8 +1,6 @@
 package SGBD_Project.example.LearnCode.Services.Impl;
 
 import SGBD_Project.example.LearnCode.Dto.QuestionDto;
-import SGBD_Project.example.LearnCode.Dto.UserQuestionDto;
-import SGBD_Project.example.LearnCode.Dto.UserTopicDto;
 import SGBD_Project.example.LearnCode.Models.Question;
 import SGBD_Project.example.LearnCode.Models.UserEntity;
 import SGBD_Project.example.LearnCode.Models.UserQuestion;
@@ -14,9 +12,8 @@ import SGBD_Project.example.LearnCode.Repositories.UserTopicRepository;
 import SGBD_Project.example.LearnCode.Services.FlaskService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.transaction.Transactional;
 import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,14 +49,14 @@ public class FlaskServiceImpl implements FlaskService {
     }
 
 
-    /*@PostConstruct
-    @Transactional*/
-    public List<Map<String,Object>> sendRequestToFlask(String userId, Set<Integer> topics) {
-        UserEntity user=userRepository.findById(userId).orElse(null);
+    /*@PostConstruct*/
+    @Transactional
+    public List<Map<String,Object>> sendRequestToFlask(String email, Set<Integer> topics, Integer questionQuantity) {
+        UserEntity user=userRepository.findByEmail(email).orElse(null);
         if(user==null) {
-            throw new RuntimeException("User not found with this ID: " + userId);
+            throw new RuntimeException("User not found with this ID: " + email);
         }
-
+        String userId=user.getId();
         Set<Integer> validTopics=userTopicRepository.findUserTopicsByUserId(userId);
         System.out.println("validTopics: "+validTopics);
         for(Integer topic:topics) {
@@ -107,7 +104,7 @@ public class FlaskServiceImpl implements FlaskService {
         JSONObject payload = new JSONObject();
         payload.put("questions", questionsArray);
         payload.put("topics", topicsArray);
-        payload.put("questionQuantity",20);
+        payload.put("questionQuantity",questionQuantity);
         System.out.println("And the payload is  \n"+payload);
         // Create the JSON payload
 
@@ -132,18 +129,17 @@ public class FlaskServiceImpl implements FlaskService {
             });
             for (Integer questionIndice:flaskResponse) {
                 UserQuestion userQuestion=userQuestionsList.get(questionIndice);
+                Question question=userQuestionsList.get(questionIndice).getQuestion();
+                System.out.println("la question est : "+ question);
                 List<String> propositions=userQuestion.getQuestion().getPropositions();
                 //System.out.println("questionId: "+userQuestion.getQuestion().getId()+" : "+ userQuestionsList.get(questionIndice).getQuestion().getQuestion()+"\n propositions: "+propositions);
-                Map<String, Object> questionMap = new HashMap<>();
-                Map<Integer,String> prop=new HashMap<>();
-                prop.put(1,!propositions.get(0).isBlank()?propositions.get(0):"");
-                prop.put(2,!propositions.get(1).isBlank()?propositions.get(1):"");
-                prop.put(3,!propositions.get(2).isBlank()?propositions.get(2):"");
-                prop.put(4,!propositions.get(3).isBlank()?propositions.get(3):"");
-                questionMap.put("question", userQuestionsList.get(questionIndice).getQuestion().getQuestion());
-                questionMap.put("propositions", prop);
+                Map<Integer,String> props=new HashMap<>();
+                for (int i = 0; i < propositions.size(); i++) {
+                    props.put(i+1,propositions.get(i));
+                }
 
-                questionsDtos.add(questionMap);
+                Map<String,Object> questionDtoMap=QuestionDto.toMapDto(question,props);
+                questionsDtos.add(questionDtoMap);
             }
             return questionsDtos;
 

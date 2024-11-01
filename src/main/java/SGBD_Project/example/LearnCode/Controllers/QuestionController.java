@@ -46,7 +46,7 @@ public class QuestionController {
         }
 
         try {
-            System.out.println("Ya brooo controller");
+            System.out.println("Ya brooo  Question controller");
             Map<String, String> questionObject = new HashMap<>();
             QuestionDto savedQuestion = questionService.createQuestion(questionDto);
             questionObject.put("explanation", savedQuestion.getExplanation());

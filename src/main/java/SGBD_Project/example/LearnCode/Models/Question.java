@@ -36,7 +36,7 @@ public class Question {
     @UpdateTimestamp
     private LocalDateTime updatedAt;  // Second date: When the question is last updated
 
-    @ManyToOne(fetch= FetchType.LAZY)
+    @ManyToOne(fetch= FetchType.EAGER)
     @JoinColumn(name = "topic_id")
     private Topic topic;
 
