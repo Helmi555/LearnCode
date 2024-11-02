@@ -3,8 +3,11 @@ package SGBD_Project.example.LearnCode.Controllers;
 import SGBD_Project.example.LearnCode.Dto.QuestionDto;
 import SGBD_Project.example.LearnCode.Dto.UserEntityDto;
 import SGBD_Project.example.LearnCode.Models.Question;
+import SGBD_Project.example.LearnCode.Repositories.QuestionRepository;
+import SGBD_Project.example.LearnCode.Repositories.UserRepository;
 import SGBD_Project.example.LearnCode.Security.JwtUtil;
 import SGBD_Project.example.LearnCode.Services.FlaskService;
+import SGBD_Project.example.LearnCode.Services.QuestionService;
 import SGBD_Project.example.LearnCode.Services.UserService;
 import netscape.javascript.JSObject;
 import org.json.JSONObject;
@@ -14,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.text.html.HTML;
 import java.util.*;
 
 @Controller
@@ -24,11 +26,14 @@ public class UserController {
     private final FlaskService flaskService;
     private final UserService userService;
     private final JwtUtil  jwtUtil;
+    private final QuestionService questionService;
+
     @Autowired
-    public UserController(FlaskService flaskService, UserService userService, JwtUtil jwtUtil) {
+    public UserController(FlaskService flaskService, UserService userService, JwtUtil jwtUtil,QuestionService questionService) {
         this.flaskService = flaskService;
         this.userService = userService;
         this.jwtUtil = jwtUtil;
+        this.questionService = questionService;
     }
 
 
@@ -57,7 +62,17 @@ public class UserController {
 
     }
 
-    //////// aaa faireeeeeeeee
+    //////// Pour corriges les questions
+    /*
+    {
+        question:{
+        questionId:"1dz8zPm6",
+        answersId:["2"]
+        },
+        .
+        .
+        .
+    } * */
     @PostMapping("correctQuestionnaire")
     public ResponseEntity<?> correctQuestionnaire(@RequestBody List<Map<String,Object>> userAnswers, @RequestHeader("Authorization") String authorization) {
         Map<String,Object> msg=new HashMap<>();
@@ -67,7 +82,17 @@ public class UserController {
             msg.put("message","User answers are empty");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
         }
-        return null;
+        System.out.println("User email: "+email);
+        try{
+            int note=questionService.correctQuestionnaire(email,userAnswers);
+                msg.put("message","Note calculated successfully");
+                msg.put("Correct answers",note);
+                return ResponseEntity.ok(msg);
+
+        }catch (Exception e){
+            msg.put("message",e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
     }
 
     @PostMapping("saveSelectedTopics")
