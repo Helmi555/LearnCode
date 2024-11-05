@@ -51,10 +51,7 @@ public class AuthController {
                 msg.put("message", "Please enter a valid email");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
             }
-            if (!UserEntityDto.isValidAge(userEntityDto.getAge())){
-                msg.put("message", "Please enter a valid age");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
-            }
+
             if (!UserEntityDto.isValidName(userEntityDto.getName()) || !UserEntityDto.isValidName(userEntityDto.getLastName())){
                 msg.put("message", "Please enter a valid name/lastName");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
@@ -67,20 +64,20 @@ public class AuthController {
                 msg.put("message", "Please enter a valid password");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
             }
-            if(!UserEntityDto.isValidTopics(userEntityDto.getTopicsId())){
+       /*     if(!UserEntityDto.isValidTopics(userEntityDto.getTopicsId())){
                 msg.put("message", "Please enter at least 3 topics");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
             }
             if(!topicService.checkTopicsExistence(userEntityDto.getTopicsId())){
                 msg.put("message", "Please enter valid topics ids");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
-            }
+            }*/
             try {
                 UserEntityDto savedUserDto = userService.createUser(userEntityDto);
                 msg.put("message", "User created successfully");
                 Map<String,Object>userMap = savedUserDto.userMap();
                 userMap.put("topicsId",userEntityDto.getTopicsId());
-                msg.put("User", userMap);
+                msg.put("user", userMap);
                 return ResponseEntity.status(HttpStatus.CREATED).body(msg);
             }catch(Exception e){
                 msg.put("message", "Failed to create user. "+e.getMessage());
@@ -203,9 +200,6 @@ public class AuthController {
             return "Please enter a valid email";
         }
 
-        if (!UserEntityDto.isValidAge(userEntityDto.getAge())) {
-            return "Please enter a valid age";
-        }
 
         if (!UserEntityDto.isValidName(userEntityDto.getName()) || !UserEntityDto.isValidName(userEntityDto.getLastName())) {
             return "Please enter a valid name/lastName";

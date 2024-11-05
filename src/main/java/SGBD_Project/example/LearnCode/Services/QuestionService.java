@@ -11,5 +11,4 @@ public interface QuestionService {
     List<QuestionDto> getAllQuestions();
     QuestionDto getQuestionById(String id);
 
-    int correctQuestionnaire(String email, List<Map<String, Object>> userAnswers);
 }

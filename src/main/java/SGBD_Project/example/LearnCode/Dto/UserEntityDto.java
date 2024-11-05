@@ -1,16 +1,9 @@
 package SGBD_Project.example.LearnCode.Dto;
 
-import SGBD_Project.example.LearnCode.Models.Topic;
-import SGBD_Project.example.LearnCode.Models.UserQuestion;
-import SGBD_Project.example.LearnCode.Models.UserTopic;
-import SGBD_Project.example.LearnCode.Utils.IdGenerator;
-import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,7 +21,6 @@ public class UserEntityDto {
     private String email;
     private String password;
     private LocalDate birthDay;
-    private int age;
     private String address;
     private Boolean isBanned;
     private LocalDateTime createdDate;
@@ -64,9 +56,6 @@ public class UserEntityDto {
         return birthDay.isBefore(LocalDate.now());
     }
 
-    public static boolean isValidAge(int age) {
-        return age > 0 && age <= 120;
-    }
 
     public static boolean isValidAddress(String address) {
         return  address.length() >= 5 && address.length() <= 100;
@@ -75,7 +64,6 @@ public class UserEntityDto {
         return email!=null && !email.isEmpty()
                 && password!=null && !password.isEmpty()
                 && birthDay!=null
-                && age>0
                 && address!=null && !address.isEmpty()
                 && name!=null && !name.isEmpty()
                 && lastName!=null && !lastName.isEmpty();
@@ -88,7 +76,6 @@ public class UserEntityDto {
         dto.put("lastName", this.lastName);
         dto.put("email", this.email);
         dto.put("birthDay", this.birthDay);
-        dto.put("age", this.age);
         dto.put("address", this.address);
         dto.put("isBanned", this.isBanned);
         dto.put("createdDate", this.createdDate);

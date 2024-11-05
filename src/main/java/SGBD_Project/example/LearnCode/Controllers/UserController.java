@@ -37,31 +37,6 @@ public class UserController {
     }
 
 
-    @GetMapping("getQuestionnaire")
-    public ResponseEntity<?> getQuestionnaire(@RequestBody Map<String,Object> requestBody, @RequestHeader("Authorization") String authorizationHeader) {
-        // Get user details, questions, and topics from the request
-        String token = authorizationHeader.substring(7); // Remove "Bearer " prefix
-        String email = jwtUtil.extractEmail(token);
-        List<Integer> topicsList = (List<Integer>) requestBody.get("topicsId");
-        Map<String,Object> msg=new HashMap<>();
-        if(topicsList == null || topicsList.isEmpty()){
-            msg.put("message","Please enter some topics");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(msg);
-        }
-
-        Set<Integer> topics = new HashSet<>(topicsList);
-        int questionQuantity=(Integer) requestBody.get("questionQuantity");
-
-        try {
-            List<Map<String,Object>> response = flaskService.sendRequestToFlask(email, topics,questionQuantity);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            // Return an error response with a 400 status code
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
-
-    }
-
     //////// Pour corriges les questions
     /*
     {
@@ -73,34 +48,12 @@ public class UserController {
         .
         .
     } * */
-    @PostMapping("correctQuestionnaire")
-    public ResponseEntity<?> correctQuestionnaire(@RequestBody List<Map<String,Object>> userAnswers, @RequestHeader("Authorization") String authorization) {
-        Map<String,Object> msg=new HashMap<>();
-        String token = authorization.substring(7);
-        String email = jwtUtil.extractEmail(token);
-        if(userAnswers.isEmpty()){
-            msg.put("message","User answers are empty");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
-        }
-        System.out.println("User email: "+email);
-        try{
-            int note=questionService.correctQuestionnaire(email,userAnswers);
-                msg.put("message","Note calculated successfully");
-                msg.put("Correct answers",note);
-                return ResponseEntity.ok(msg);
 
-        }catch (Exception e){
-            msg.put("message",e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
-        }
-    }
 
     @PostMapping("saveSelectedTopics")
     public ResponseEntity<?> saveSelectedTopics(@RequestBody UserEntityDto userEntityDto, @RequestHeader("Authorization") String authorizationHeader) {
-        System.out.println("1111111111");
         String token = authorizationHeader.substring(7); // Remove "Bearer " prefix
         String email = jwtUtil.extractEmail(token); // Get username from token
-        System.out.println("222222");
         Map<String,Object> msg = new HashMap<>();
         if(email == null || email.isEmpty()) {
             msg.put("message", "Invalid email");
@@ -112,16 +65,13 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
         }
         try{
-            System.out.println("333333333333");
 
             userService.saveSelectedTopics(email,topicsId);
-            System.out.println("444444444444");
 
             msg.put("message", "Successfully added topics");
             return ResponseEntity.status(HttpStatus.OK).body(msg);
         }
         catch(Exception e){
-            System.out.println("5555555555555");
             msg.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
         }

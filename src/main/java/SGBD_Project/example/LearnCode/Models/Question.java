@@ -47,6 +47,10 @@ public class Question {
     @OneToMany(mappedBy = "question")
     private Set<UserQuestion> userQuestions;
 
+    @ManyToMany(mappedBy = "questions")
+    private Set<Questionnaire> questionnaires;
+
+
     public boolean canAddProposition() {
         return propositions.size() < 4;
     }

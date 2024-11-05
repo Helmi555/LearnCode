@@ -1,19 +1,13 @@
 package SGBD_Project.example.LearnCode.Services.Impl;
 
 import SGBD_Project.example.LearnCode.Dto.QuestionDto;
-import SGBD_Project.example.LearnCode.Models.Question;
-import SGBD_Project.example.LearnCode.Models.UserEntity;
-import SGBD_Project.example.LearnCode.Models.UserQuestion;
-import SGBD_Project.example.LearnCode.Models.UserTopic;
-import SGBD_Project.example.LearnCode.Repositories.QuestionRepository;
-import SGBD_Project.example.LearnCode.Repositories.UserQuestionRepository;
-import SGBD_Project.example.LearnCode.Repositories.UserRepository;
-import SGBD_Project.example.LearnCode.Repositories.UserTopicRepository;
+import SGBD_Project.example.LearnCode.Models.*;
+import SGBD_Project.example.LearnCode.Repositories.*;
 import SGBD_Project.example.LearnCode.Services.FlaskService;
+import SGBD_Project.example.LearnCode.Services.QuestionnaireService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.transaction.Transactional;
 import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,22 +30,24 @@ public class FlaskServiceImpl implements FlaskService {
     private final UserTopicRepository userTopicRepository;
     private final QuestionRepository questionRepository;
     private final UserQuestionRepository userQuestionRepository;
+    private final QuestionnaireRepository questionnaireRepository;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String flaskUrl = "http://localhost:5000/predict"; // Flask endpoint
 
     @Autowired
-    public FlaskServiceImpl (UserRepository userRepository, UserTopicRepository userTopicRepository, QuestionRepository questionRepository,UserQuestionRepository userQuestionRepository) {
+    public FlaskServiceImpl (UserRepository userRepository, UserTopicRepository userTopicRepository, QuestionRepository questionRepository, UserQuestionRepository userQuestionRepository, QuestionnaireRepository questionnaireRepository) {
         this.userRepository = userRepository;
         this.userTopicRepository = userTopicRepository;
         this.questionRepository = questionRepository;
         this.userQuestionRepository = userQuestionRepository;
+        this.questionnaireRepository = questionnaireRepository;
     }
 
 
     /*@PostConstruct*/
     @Transactional
-    public List<Map<String,Object>> sendRequestToFlask(String email, Set<Integer> topics, Integer questionQuantity) {
+    public Map<String,Object> sendRequestToFlask(String email, Set<Integer> topics, Integer questionQuantity) {
         UserEntity user=userRepository.findByEmail(email).orElse(null);
         if(user==null) {
             throw new RuntimeException("User not found with this ID: " + email);
@@ -125,12 +121,14 @@ public class FlaskServiceImpl implements FlaskService {
             //Parcourir les questions
             List<Map<String,Object>> questionsDtos=new ArrayList<>();
             ObjectMapper objectMapper = new ObjectMapper();
+            Set<Question> questionSet=new HashSet<>();
             List<Integer> flaskResponse=objectMapper.readValue(response.getBody(), new TypeReference<>() {
             });
             for (Integer questionIndice:flaskResponse) {
                 UserQuestion userQuestion=userQuestionsList.get(questionIndice);
                 Question question=userQuestionsList.get(questionIndice).getQuestion();
                 System.out.println("la question est : "+ question);
+                questionSet.add(question);
                 List<String> propositions=userQuestion.getQuestion().getPropositions();
                 //System.out.println("questionId: "+userQuestion.getQuestion().getId()+" : "+ userQuestionsList.get(questionIndice).getQuestion().getQuestion()+"\n propositions: "+propositions);
                 Map<Integer,String> props=new HashMap<>();
@@ -141,12 +139,26 @@ public class FlaskServiceImpl implements FlaskService {
                 Map<String,Object> questionDtoMap=QuestionDto.toMapDto(question,props);
                 questionsDtos.add(questionDtoMap);
             }
-            return questionsDtos;
+
+            // save the questionnaire
+
+            Questionnaire questionnaire=Questionnaire.builder()
+                    .questions(questionSet)
+                    .completed(false)
+                    .numberOfQuestions(questionQuantity)
+                    .numberCorrectedAnswers(-1)
+                    .description("")
+                    .build();
+            Long questionnaireId=questionnaireRepository.save(questionnaire).getId();
+            Map<String,Object> questionnaireResult=new HashMap<>();
+            questionnaireResult.put("questionnaireId",questionnaireId);
+            questionnaireResult.put("questions",questionsDtos);
+            return questionnaireResult;
 
         } catch (RestClientException | JsonProcessingException e) {
             System.out.println("Exception occurred: " + e.getMessage());
             // Return an empty list in case of an exception
-            return new ArrayList<>();
+            return new HashMap<>();
         }
 
     }

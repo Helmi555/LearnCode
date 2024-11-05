@@ -32,7 +32,6 @@ public class UserEntity {
     private String email;
     private String password;
     private LocalDate birthDay;
-    private int age;
     private String address;
     private Boolean isBanned;
     private LocalDateTime lastLoginDate;

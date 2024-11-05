@@ -8,5 +8,5 @@ import java.util.Set;
 
 public interface FlaskService {
 
-    List<Map<String,Object>> sendRequestToFlask(String userDetails, Set<Integer> topics,Integer questionQuantity);
+    Map<String,Object>sendRequestToFlask(String userDetails, Set<Integer> topics,Integer questionQuantity);
 }

@@ -95,57 +95,6 @@ public class QuestionServiceImpl implements QuestionService {
         }
     }
 
-    @Override
-    public int correctQuestionnaire(String email, List<Map<String, Object>> userAnswers) {
-        UserEntity user=userRepository.findByEmail(email).orElse(null);
-        if(user==null) {
-            throw new RuntimeException("This user doesn't exist : " + email);
-        }
-        int note=0;
-        for(Map<String, Object> userAnswer:userAnswers) {
-            String questionId=(String)userAnswer.get("questionId");
-            List<Integer> userAnswersId=(List<Integer>) userAnswer.get("answersId");
-            int respondingTime=(Integer) userAnswer.get("respondingTime");
-            Question question=questionRepository.findById(questionId).orElse(null);
-            if(question==null) {
-                throw new RuntimeException("This question doesn't exist : " + questionId);
-            }
-            if(userAnswersId.isEmpty()){
-                throw new RuntimeException("There are no answers for this questions : " + questionId);
-            }
-            if(respondingTime<0){
-                throw new RuntimeException("The responding time cannot be negative");
-            }
-            List<String> answers=question.getAnswers();
-            List<String> propositions=question.getPropositions();
-            boolean correct=true;
-            for(Integer answerId:userAnswersId) {
-                if(!answers.contains(propositions.get(answerId-1))) {
-                    correct=false;
-                }
-            }
-            if(correct) note+=1;
-            UserQuestion userQuestion=userQuestionRepository.findByQuestion_IdAndUser_Id(questionId,user.getId());
-            if(userQuestion==null) {
-                UserQuestion newUserQuestion=UserQuestion.builder()
-                        .correctness(correct?1:0)
-                        .user(user)
-                        .question(question)
-                        .given(true)
-                        .respondingTime(respondingTime)
-                        .build();
-                userQuestionRepository.save(newUserQuestion);
-            }
-            else{
-                userQuestion.setCorrectness(correct?1:0);
-                userQuestion.setGiven(true);
-                userQuestion.setRespondingTime((userQuestion.getRespondingTime()+respondingTime) /2);
-                userQuestionRepository.save(userQuestion);
-            }
-        }
-        return note;
-    }
-
 
     public QuestionDto mapToDto(Question question) {
         QuestionDto dto = QuestionDto.builder()

@@ -64,7 +64,6 @@ public class UserServiceImpl implements UserService {
             // Create UserEntity
             UserEntity savingUser = UserEntity.builder()
                     .id(generatedId)
-                    .age(userDto.getAge())
                     .name(userDto.getName())
                     .password(encodedPassword)
                     .lastName(userDto.getLastName())
@@ -278,7 +277,6 @@ public class UserServiceImpl implements UserService {
     public UserEntityDto mapToDto(UserEntity userEntity) {
         return UserEntityDto.builder()
                 .id(userEntity.getId())
-                .age(userEntity.getAge())
                 .name(userEntity.getName())
                 .lastName(userEntity.getLastName())
                 .address(userEntity.getAddress())

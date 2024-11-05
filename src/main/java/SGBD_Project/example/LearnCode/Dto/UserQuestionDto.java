@@ -21,4 +21,5 @@ public class UserQuestionDto {
     private int respondingTime;
     private double levelQuestion;
 
+
 }
