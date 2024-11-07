@@ -79,5 +79,31 @@ public class QuestionnaireController {
         }
     }
 
+    @GetMapping("getAllQuestionnaires")
+    public ResponseEntity<?> getAllQuestionnaires( @RequestHeader("Authorization") String authorization){
+        Map<String,Object> msg=new HashMap<>();
+        String token = authorization.substring(7);
+        String email = jwtUtil.extractEmail(token);
+       if(email.isBlank()){
+           msg.put("message","No email in the token");
+           return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(msg);
+       }
+       try{
+           List<QuestionnaireDto> questionnaireDtoList=questionnaireService.getAllQuestionnaires(email);
+           msg.put("message","List of questionnaires returned successfully");
+           msg.put("Questionnaires",questionnaireDtoList);
+           return ResponseEntity.status(HttpStatus.OK).body(msg);
+
+       }
+       catch (Exception e){
+           msg.put("message",e.getMessage());
+           return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+       }
+
+
+
+
+    }
+
 
 }

@@ -2,6 +2,7 @@ package SGBD_Project.example.LearnCode.Dto;
 
 import SGBD_Project.example.LearnCode.Models.Question;
 import SGBD_Project.example.LearnCode.Models.Questionnaire;
+import SGBD_Project.example.LearnCode.Models.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,11 +10,13 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class QuestionnaireDto {
     private Long id;
 
@@ -24,6 +27,7 @@ public class QuestionnaireDto {
     private String description;
     private Set<Question> questions ;
     private LocalDateTime answeredAt ;
+    private String userId;
 
 
     public static QuestionnaireDto toDto(Questionnaire questionnaire) {
@@ -36,6 +40,7 @@ public class QuestionnaireDto {
                 .description(questionnaire.getDescription())
                 .questions(questionnaire.getQuestions())
                 .answeredAt(questionnaire.getAnsweredAt())
+                .userId(questionnaire.getUser().getId())
                 .build();
     }
 

@@ -39,5 +39,8 @@ public class Questionnaire {
     )
     private Set<Question> questions =new HashSet<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
 
 }

@@ -53,6 +53,10 @@ public class UserEntity {
     @Column(name = "token")
     private List<String> tokens = new ArrayList<>();
 
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Questionnaire> questionnaires = new HashSet<>();
+
     public void addToken(String token) {
         tokens.add(token);
     }

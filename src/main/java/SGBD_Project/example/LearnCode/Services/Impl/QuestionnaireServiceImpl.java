@@ -14,8 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class QuestionnaireServiceImpl implements QuestionnaireService {
@@ -45,6 +47,13 @@ public class QuestionnaireServiceImpl implements QuestionnaireService {
         Questionnaire questionnaire=questionnaireRepository.findById(questionnaireId).orElse(null);
         if(questionnaire==null) {
             throw new RuntimeException("This questionnaire doesn't exist : " + questionnaireId);
+        }
+        if(!Objects.equals(questionnaire.getUser().getId(), user.getId())) {
+            throw new RuntimeException("This questionnaire doesn't belongs to userId: " + user.getId());
+        }
+        if(questionnaire.getAnsweredAt()!=null){
+            throw new RuntimeException("This questionnaire has already been corrected!");
+
         }
         int numberCorrectAnswers=0;
         for(Map<String, Object> userAnswer:userAnswers) {
@@ -94,6 +103,24 @@ public class QuestionnaireServiceImpl implements QuestionnaireService {
         questionnaire.setAnsweredAt(LocalDateTime.now());
         questionnaireRepository.save(questionnaire);
         return QuestionnaireDto.toDto(questionnaire);
+    }
+
+    @Override
+    public List<QuestionnaireDto> getAllQuestionnaires(String email) {
+        UserEntity user=userRepository.findByEmail(email).orElse(null);
+        if(user==null) {
+            throw new RuntimeException("This user doesn't exist : " + email);
+        }
+        List<Questionnaire> questionnaireList=questionnaireRepository.findAllByUser_Id(user.getId());
+        List<QuestionnaireDto> questionnaireDtoList= new ArrayList<>();
+        for(Questionnaire questionnaire:questionnaireList) {
+            QuestionnaireDto questionnaireDto=QuestionnaireDto.toDto(questionnaire);
+            questionnaireDto.setUserId(null);
+            questionnaireDto.setQuestions(null);
+            questionnaireDtoList.add(questionnaireDto);
+        }
+        return questionnaireDtoList;
+
     }
 
 }

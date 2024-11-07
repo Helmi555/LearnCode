@@ -149,7 +149,12 @@ public class FlaskServiceImpl implements FlaskService {
                     .numberCorrectedAnswers(-1)
                     .description("")
                     .build();
-            Long questionnaireId=questionnaireRepository.save(questionnaire).getId();
+            Questionnaire savedQuestionnaire=questionnaireRepository.save(questionnaire);
+            Long questionnaireId=savedQuestionnaire.getId();
+            Set<Questionnaire> userQuestionnaireSet=user.getQuestionnaires();
+            userQuestionnaireSet.add(savedQuestionnaire);
+            savedQuestionnaire.setUser(user);
+            userRepository.save(user);
             Map<String,Object> questionnaireResult=new HashMap<>();
             questionnaireResult.put("questionnaireId",questionnaireId);
             questionnaireResult.put("questions",questionsDtos);
