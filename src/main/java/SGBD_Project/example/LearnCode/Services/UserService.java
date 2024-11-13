@@ -1,5 +1,6 @@
 package SGBD_Project.example.LearnCode.Services;
 
+import SGBD_Project.example.LearnCode.Dto.TopicDto;
 import SGBD_Project.example.LearnCode.Dto.UserEntityDto;
 
 import java.util.List;
@@ -18,7 +19,7 @@ public interface UserService {
 
     Boolean signOut(String token);
 
-    void saveSelectedTopics(String email, Set<Integer> topicsId);
+    Set<TopicDto> saveSelectedTopics(String email, Set<Integer> topicsId);
 
     void updateUserRanks(String email, List<Map<String, Object>> topics);
 }

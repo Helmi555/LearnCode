@@ -1,6 +1,7 @@
 package SGBD_Project.example.LearnCode.Controllers;
 
 import SGBD_Project.example.LearnCode.Dto.QuestionDto;
+import SGBD_Project.example.LearnCode.Dto.TopicDto;
 import SGBD_Project.example.LearnCode.Dto.UserEntityDto;
 import SGBD_Project.example.LearnCode.Models.Question;
 import SGBD_Project.example.LearnCode.Repositories.QuestionRepository;
@@ -52,8 +53,8 @@ public class UserController {
 
     @PostMapping("saveSelectedTopics")
     public ResponseEntity<?> saveSelectedTopics(@RequestBody UserEntityDto userEntityDto, @RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.substring(7); // Remove "Bearer " prefix
-        String email = jwtUtil.extractEmail(token); // Get username from token
+        String token = authorizationHeader.substring(7);
+        String email = jwtUtil.extractEmail(token);
         Map<String,Object> msg = new HashMap<>();
         if(email == null || email.isEmpty()) {
             msg.put("message", "Invalid email");
@@ -61,14 +62,13 @@ public class UserController {
         }
         Set<Integer> topicsId = userEntityDto.getTopicsId();
         if(topicsId==null || topicsId.size()<1) {
-            msg.put("message", "Please enter at least 3 topics");
+            msg.put("message", "Please enter at least 1 topic");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
         }
         try{
-
-            userService.saveSelectedTopics(email,topicsId);
-
+            Set<TopicDto> topicDtos= userService.saveSelectedTopics(email,topicsId);
             msg.put("message", "Successfully added topics");
+            msg.put("topics",topicDtos);
             return ResponseEntity.status(HttpStatus.OK).body(msg);
         }
         catch(Exception e){

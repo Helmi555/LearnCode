@@ -22,6 +22,9 @@ public class Topic {
     private int id;
 
     private String name;
+    private String imageUrl;
+    private String colorRef;
+    private String description;
 
     @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore

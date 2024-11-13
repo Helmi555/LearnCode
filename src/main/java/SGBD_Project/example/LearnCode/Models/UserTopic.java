@@ -12,6 +12,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Data
 @JsonIgnoreProperties({"user"}) // Simplified annotation
 public class UserTopic {
     @Id
@@ -29,6 +30,9 @@ public class UserTopic {
 
     private double rank;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean activated;
+
     @Override
     public String toString() {
         return "UserTopic{" +
@@ -44,4 +48,9 @@ public class UserTopic {
             if(level == 3) return 0.4;
             else return 0.6;
     }
+
+    public boolean getActivated() {
+        return activated;
+    }
+
 }

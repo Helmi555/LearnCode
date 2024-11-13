@@ -1,22 +1,16 @@
 package SGBD_Project.example.LearnCode.Services.Impl;
 
-import SGBD_Project.example.LearnCode.Dto.QuestionDto;
+import SGBD_Project.example.LearnCode.Dto.TopicDto;
 import SGBD_Project.example.LearnCode.Dto.UserEntityDto;
 import SGBD_Project.example.LearnCode.Models.*;
 import SGBD_Project.example.LearnCode.Repositories.*;
 import SGBD_Project.example.LearnCode.Security.JwtUtil;
-import SGBD_Project.example.LearnCode.Security.SecurityConfig;
-import SGBD_Project.example.LearnCode.Services.QuestionService;
 import SGBD_Project.example.LearnCode.Services.UserService;
 import SGBD_Project.example.LearnCode.Utils.IdGenerator;
-import jakarta.annotation.PostConstruct;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
 
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
@@ -203,7 +197,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void saveSelectedTopics(String email, Set<Integer> topicsId) {
+    public Set<TopicDto> saveSelectedTopics(String email, Set<Integer> topicsId) {
+        try {
+
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -211,20 +207,74 @@ public class UserServiceImpl implements UserService {
             Topic topic = topicRepository.findById(topicId)
                     .orElseThrow(() -> new RuntimeException("Topic " + topicId + " not found"));
 
-            UserTopic userTopic = UserTopic.builder()
-                    .user(user)
-                    .topic(topic)
-                    .rank(0.0)
-                    .build();
-
-            user.addUserTopic(userTopic);
+            UserTopic userTopic=userTopicRepository.findByUser_IdAndTopic_Id(user.getId(),topicId);
+            if(userTopic==null){
+                UserTopic newUserTopic = UserTopic.builder()
+                        .user(user)
+                        .topic(topic)
+                        .rank(0.0)
+                        .activated(true)
+                        .build();
+                user.addUserTopic(newUserTopic);
+            }else{
+                if(!userTopic.getActivated()){
+                    userTopic.setActivated(true);
+                    userTopicRepository.save(userTopic);
+                }
+            }
         }
-
-        try {
             userRepository.save(user);
+            //no make false the not wanted topics
+            Set<UserTopic> userTopicList=userTopicRepository.findByUser_Id(user.getId());
+            Set<TopicDto> topicDtoSet=new HashSet<>();
+        for(UserTopic userTopic:userTopicList){
+            int topicId=userTopic.getTopic().getId();
+            if(!topicsId.contains(topicId)){
+                userTopic.setActivated(false);
+                userTopicRepository.save(userTopic);
+            }
+            else{
+                topicDtoSet.add(MapToTopicDto(userTopic.getTopic()));
+            }
+        }
+        /*
+        Set<UserTopic> userTopics=userTopicRepository.findByUser_Id(user.getId());
+            System.out.println("usertopics :"+userTopics);
+        for(UserTopic userTopic:userTopics){
+            int topicId=userTopic.getTopic().getId();
+            Topic topic = topicRepository.findById(topicId)
+                    .orElseThrow(() -> new RuntimeException("Topic " + topicId + " not found"));
+            UserTopic existingUserTopic=userTopicRepository.findByUser_IdAndTopic_Id(user.getId(), topicId);
+            System.out.println("existingUserTopic : "+existingUserTopic);
+
+            if(topicsId.contains(topicId)){
+                if(existingUserTopic==null){
+                    UserTopic newUserTopic = UserTopic.builder()
+                            .user(user)
+                            .topic(topic)
+                            .rank(0.0)
+                            .activated(true)
+                            .build();
+
+                    user.addUserTopic(newUserTopic);
+                }
+                else{
+                    existingUserTopic.setActivated(true);
+                }
+
+            }
+            else{
+                if(existingUserTopic!=null){
+                    existingUserTopic.setActivated(false);
+                }
+            }
+        }*/
+            return topicDtoSet;
+
         } catch (Exception e) {
             throw new RuntimeException("Failed to save user topics: " + e.getMessage());
         }
+
     }
 
     @Override
@@ -286,5 +336,15 @@ public class UserServiceImpl implements UserService {
                 .createdDate(userEntity.getCreatedDate())
                 .updatedDate(userEntity.getUpdatedDate())
                 .build();
+    }
+
+    public TopicDto MapToTopicDto(Topic topic) {
+        TopicDto topicDto = new TopicDto();
+        topicDto.setId(topic.getId());
+        topicDto.setName(topic.getName());
+        topicDto.setDescription(topic.getDescription());
+        topicDto.setImageUrl(topic.getImageUrl());
+        topicDto.setColorRef(topic.getColorRef());
+        return topicDto;
     }
 }

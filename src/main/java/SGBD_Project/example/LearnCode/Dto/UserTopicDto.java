@@ -10,4 +10,5 @@ public class UserTopicDto {
     private String userId;
     private int topicId;
     private Double rank;
+    private boolean activated;
 }
