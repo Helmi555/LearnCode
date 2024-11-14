@@ -6,6 +6,7 @@ import SGBD_Project.example.LearnCode.Models.UserEntity;
 import SGBD_Project.example.LearnCode.Models.UserTopic;
 import SGBD_Project.example.LearnCode.Repositories.TopicRepository;
 import SGBD_Project.example.LearnCode.Repositories.UserRepository;
+import SGBD_Project.example.LearnCode.Repositories.UserTopicRepository;
 import SGBD_Project.example.LearnCode.Services.TopicService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,12 +22,14 @@ public class TopicServiceImpl implements TopicService {
     private final TopicRepository topicRepository;
     private final CloudinaryService cloudinaryService;
     private final UserRepository userRepository;
+    private final UserTopicRepository userTopicRepository;
 
     @Autowired
-    public TopicServiceImpl(TopicRepository topicRepository, CloudinaryService cloudinaryService, UserRepository userRepository) {
+    public TopicServiceImpl(TopicRepository topicRepository, CloudinaryService cloudinaryService, UserRepository userRepository, UserTopicRepository userTopicRepository) {
         this.topicRepository = topicRepository;
         this.cloudinaryService = cloudinaryService;
         this.userRepository = userRepository;
+        this.userTopicRepository = userTopicRepository;
     }
     @Override
     public List<TopicDto> getAllTopics() {
@@ -125,21 +128,28 @@ public class TopicServiceImpl implements TopicService {
 
     @Override
     public Set<TopicDto> getAllUserTopics(String email) {
-        UserEntity user=userRepository.findByEmail(email).orElse(null);
-        if(user==null){
-            throw new RuntimeException("User with this email does not exist");
-        }
-        Set<UserTopic> userTopics=user.getUserTopics();
-        Set<TopicDto> topicDtoSet=new HashSet<>();
-        for(UserTopic userTopic:userTopics){
-            Topic topic=topicRepository.findById(userTopic.getTopic().getId()).orElse(null);
-            if(topic==null){
-                throw new RuntimeException("Topic with this id does not exist: "+userTopic.getTopic().getId());
+        try {
+            UserEntity user = userRepository.findByEmail(email).orElse(null);
+            if (user == null) {
+                throw new RuntimeException("User with this email does not exist");
             }
-            topicDtoSet.add(MapToDto(topic));
+            Set<UserTopic> userTopics = user.getUserTopics();
+            Set<TopicDto> topicDtoSet = new HashSet<>();
+            for (UserTopic userTopic : userTopics) {
+                Topic topic = topicRepository.findById(userTopic.getTopic().getId()).orElse(null);
+                if (topic == null) {
+                    throw new RuntimeException("Topic with this id does not exist: " + userTopic.getTopic().getId());
+                }
+                TopicDto topicDto = MapToDto(topic);
+                topicDto.setUserRank(userTopic.getRank());
+                topicDtoSet.add(topicDto);
 
+            }
+            return topicDtoSet;
         }
-        return topicDtoSet;
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -156,7 +166,10 @@ public class TopicServiceImpl implements TopicService {
                 throw new RuntimeException("Topic with this id does not exist: "+userTopic.getTopic().getId());
             }
             if(userTopic.getActivated()){
-                topicDtoSet.add(MapToDto(topic));
+                TopicDto topicDto = MapToDto(topic);
+                topicDto.setUserRank(userTopic.getRank());
+                topicDtoSet.add(topicDto);
+
             }
 
         }

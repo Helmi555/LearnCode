@@ -43,7 +43,7 @@ public class UserTopic {
     }
 
     public static double getRankFromLevel(int level) {
-            if(level == 1) return 0;
+            if(level == 1) return 0.1;
             if(level == 2) return 0.2;
             if(level == 3) return 0.4;
             else return 0.6;

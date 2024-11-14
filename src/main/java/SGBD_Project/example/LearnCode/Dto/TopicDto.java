@@ -9,4 +9,5 @@ public class TopicDto {
     private String imageUrl;
     private String description;
     private String colorRef;
+    private double userRank;
 }
