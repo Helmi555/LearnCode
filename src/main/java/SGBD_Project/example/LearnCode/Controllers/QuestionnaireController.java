@@ -30,8 +30,8 @@ public class QuestionnaireController {
     }
 
 
-    @GetMapping("getQuestionnaire")
-    public ResponseEntity<?> getQuestionnaire(@RequestBody Map<String,Object> requestBody, @RequestHeader("Authorization") String authorizationHeader) {
+    @GetMapping("getNewQuestionnaire")
+    public ResponseEntity<?> getNewQuestionnaire(@RequestBody Map<String,Object> requestBody, @RequestHeader("Authorization") String authorizationHeader) {
         // Get user details, questions, and topics from the request
         String token = authorizationHeader.substring(7); // Remove "Bearer " prefix
         String email = jwtUtil.extractEmail(token);
