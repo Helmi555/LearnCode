@@ -2,6 +2,7 @@ package SGBD_Project.example.LearnCode.Controllers;
 
 import SGBD_Project.example.LearnCode.Dto.QuestionDto;
 import SGBD_Project.example.LearnCode.Dto.TopicDto;
+import SGBD_Project.example.LearnCode.Dto.UserDto;
 import SGBD_Project.example.LearnCode.Dto.UserEntityDto;
 import SGBD_Project.example.LearnCode.Models.Question;
 import SGBD_Project.example.LearnCode.Repositories.QuestionRepository;
@@ -97,6 +98,26 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.OK).body(msg);
 
         }catch (Exception e){
+            msg.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+    }
+    @GetMapping("getUserDetails")
+    public ResponseEntity<?> getUserDetails(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        String email = jwtUtil.extractEmail(token);
+        Map<String,Object> msg = new HashMap<>();
+        if(email == null || email.isEmpty()) {
+            msg.put("message", "Invalid email");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+        try {
+            UserDto userDto=userService.getUserDetails(email);
+            msg.put("user", userDto);
+            msg.put("message", "Successfully retrieved user details");
+            return ResponseEntity.status(HttpStatus.OK).body(msg);
+        }
+        catch(Exception e){
             msg.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
         }

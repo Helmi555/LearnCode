@@ -98,8 +98,8 @@ public class AuthController {
                 msg.put("message", "Please enter a valid email");
             }
             try {
-                String token=userService.signIn(email,password);
-                msg.put("token",token);
+                UserDto userDetails=userService.signIn(email,password);
+                msg.put("userDetails",userDetails);
                 msg.put("message", "User signed in successfully");
                 return ResponseEntity.status(HttpStatus.OK).body(msg);
             }

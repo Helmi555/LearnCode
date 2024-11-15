@@ -1,6 +1,7 @@
 package SGBD_Project.example.LearnCode.Services.Impl;
 
 import SGBD_Project.example.LearnCode.Dto.TopicDto;
+import SGBD_Project.example.LearnCode.Dto.UserDto;
 import SGBD_Project.example.LearnCode.Dto.UserEntityDto;
 import SGBD_Project.example.LearnCode.Models.*;
 import SGBD_Project.example.LearnCode.Repositories.*;
@@ -155,7 +156,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String signIn(String email, String password) {
+    public UserDto signIn(String email, String password) {
         try {
             UserEntity user = userRepository.findByEmail(email).orElse(null);
             if (user == null) {
@@ -169,7 +170,7 @@ public class UserServiceImpl implements UserService {
             user.setLastLoginDate(LocalDateTime.now());
             user.addToken(token);
             userRepository.save(user);
-            return token;
+            return UserDto.userToDtoWithToken(user,token);
 
         }
         catch (Exception e) {
@@ -298,6 +299,15 @@ public class UserServiceImpl implements UserService {
 
             userTopicRepository.save(userTopic);
         }
+    }
+
+    @Override
+    public UserDto getUserDetails(String email) {
+        UserEntity user = userRepository.findByEmail(email).orElse(null);
+        if(user==null){
+            throw new RuntimeException("User not found");
+        }
+        return UserDto.userToDto(user);
     }
 
     public static int getRandomIndex(List<Integer> indices) {

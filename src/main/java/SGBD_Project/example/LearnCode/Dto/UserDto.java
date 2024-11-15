@@ -18,11 +18,12 @@ public class UserDto {
     private String lastName;
     private String email;
     private LocalDate birthDay;
-    private int age;
     private String address;
     private Boolean isBanned;
     private LocalDateTime createdDate;
     private LocalDateTime updatedDate;
+    private String token;
+
 
     public static UserDto userToDto(UserEntity userEntity) {
         return UserDto.builder()
@@ -35,6 +36,20 @@ public class UserDto {
                 .isBanned(userEntity.getIsBanned())
                 .createdDate(userEntity.getCreatedDate())
                 .updatedDate(userEntity.getUpdatedDate())
+                .build();
+    }
+    public static UserDto userToDtoWithToken(UserEntity userEntity,String token) {
+        return UserDto.builder()
+                .id(userEntity.getId())
+                .name(userEntity.getName())
+                .lastName(userEntity.getLastName())
+                .email(userEntity.getEmail())
+                .birthDay(userEntity.getBirthDay())
+                .address(userEntity.getAddress())
+                .isBanned(userEntity.getIsBanned())
+                .createdDate(userEntity.getCreatedDate())
+                .updatedDate(userEntity.getUpdatedDate())
+                .token(token)
                 .build();
     }
 
