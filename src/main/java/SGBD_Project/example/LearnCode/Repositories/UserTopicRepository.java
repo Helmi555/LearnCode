@@ -15,4 +15,5 @@ public interface UserTopicRepository extends JpaRepository<UserTopic, Integer> {
 
     @Query(value = "SELECT topic_id FROM user_topic WHERE user_id = :userId", nativeQuery = true)
     Set<Integer> findUserTopicsByUserId(@Param("userId") String userId);
+    UserTopic findByTopic_Id(Integer topicId);
 }

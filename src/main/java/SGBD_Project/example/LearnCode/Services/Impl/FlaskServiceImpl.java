@@ -57,7 +57,7 @@ public class FlaskServiceImpl implements FlaskService {
         System.out.println("validTopics: "+validTopics);
         for(Integer topic:topics) {
             if(!validTopics.contains(topic)) {
-                throw new RuntimeException("Topic not valid: " + topic.toString());
+                throw new RuntimeException("Topic not valid for this user: " + topic.toString());
             }
         }
         Set<UserTopic> userTopics=userTopicRepository.findByUser_Id(userId);
@@ -73,8 +73,10 @@ public class FlaskServiceImpl implements FlaskService {
         List<String> questionIds = questionsByTopic.stream()
                 .map(Question::getId)
                 .collect(Collectors.toList());
-
+        //System.out.println("*********** questionIds : " + questionIds);
         List<UserQuestion> userQuestionsList=userQuestionRepository.findByQuestion_IdIn(questionIds);
+        //System.out.println("************ userQuestionsList : " + userQuestionsList);
+
         List<List<Object>> userQuestionDtos=new ArrayList<>();
         for(UserQuestion userQuestion:userQuestionsList) {
                 /*UserQuestionDto userQuestionDto=UserQuestionDto.builder()
@@ -98,6 +100,9 @@ public class FlaskServiceImpl implements FlaskService {
 
         // Combine everything into the main payload
         JSONObject payload = new JSONObject();
+        System.out.println("questionsArray: "+questionsArray);
+        System.out.println("topicsArray: "+topicsArray);
+        System.out.println("questionQuantity: "+questionQuantity);
         payload.put("questions", questionsArray);
         payload.put("topics", topicsArray);
         payload.put("questionQuantity",questionQuantity);
@@ -122,12 +127,14 @@ public class FlaskServiceImpl implements FlaskService {
             List<Map<String,Object>> questionsDtos=new ArrayList<>();
             ObjectMapper objectMapper = new ObjectMapper();
             Set<Question> questionSet=new HashSet<>();
-            List<Integer> flaskResponse=objectMapper.readValue(response.getBody(), new TypeReference<>() {
-            });
+            List<Integer> flaskResponse=objectMapper.readValue(response.getBody(), new TypeReference<>() {});
+
+            //return null;
+
             for (Integer questionIndice:flaskResponse) {
                 UserQuestion userQuestion=userQuestionsList.get(questionIndice);
                 Question question=userQuestionsList.get(questionIndice).getQuestion();
-                System.out.println("la question est : "+ question);
+                System.out.println("******* flaskIndice: "+questionIndice +" la question est : "+ question);
                 questionSet.add(question);
                 List<String> propositions=userQuestion.getQuestion().getPropositions();
                 //System.out.println("questionId: "+userQuestion.getQuestion().getId()+" : "+ userQuestionsList.get(questionIndice).getQuestion().getQuestion()+"\n propositions: "+propositions);
@@ -145,7 +152,7 @@ public class FlaskServiceImpl implements FlaskService {
             Questionnaire questionnaire=Questionnaire.builder()
                     .questions(questionSet)
                     .completed(false)
-                    .numberOfQuestions(questionQuantity)
+                    .numberOfQuestions(questionSet.size())
                     .numberCorrectedAnswers(-1)
                     .description("")
                     .build();
@@ -159,6 +166,7 @@ public class FlaskServiceImpl implements FlaskService {
             questionnaireResult.put("questionnaireId",questionnaireId);
             questionnaireResult.put("questions",questionsDtos);
             return questionnaireResult;
+
 
         } catch (RestClientException | JsonProcessingException e) {
             System.out.println("Exception occurred: " + e.getMessage());

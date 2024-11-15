@@ -1,23 +1,16 @@
 package SGBD_Project.example.LearnCode.Services.Impl;
 
 import SGBD_Project.example.LearnCode.Dto.QuestionnaireDto;
-import SGBD_Project.example.LearnCode.Models.Question;
-import SGBD_Project.example.LearnCode.Models.Questionnaire;
-import SGBD_Project.example.LearnCode.Models.UserEntity;
-import SGBD_Project.example.LearnCode.Models.UserQuestion;
-import SGBD_Project.example.LearnCode.Repositories.QuestionRepository;
-import SGBD_Project.example.LearnCode.Repositories.QuestionnaireRepository;
-import SGBD_Project.example.LearnCode.Repositories.UserQuestionRepository;
-import SGBD_Project.example.LearnCode.Repositories.UserRepository;
+import SGBD_Project.example.LearnCode.Models.*;
+import SGBD_Project.example.LearnCode.Repositories.*;
 import SGBD_Project.example.LearnCode.Services.QuestionnaireService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class QuestionnaireServiceImpl implements QuestionnaireService {
@@ -26,15 +19,17 @@ public class QuestionnaireServiceImpl implements QuestionnaireService {
     private final UserRepository userRepository;
     private final QuestionRepository questionRepository;
     private final UserQuestionRepository userQuestionRepository;
+    private final UserTopicRepository userTopicRepository;
 
 
     @Autowired
-    public QuestionnaireServiceImpl(QuestionnaireRepository questionnaireRepository, UserRepository userRepository, QuestionRepository questionRepository, UserQuestionRepository userQuestionRepository) {
+    public QuestionnaireServiceImpl(QuestionnaireRepository questionnaireRepository, UserRepository userRepository, QuestionRepository questionRepository, UserQuestionRepository userQuestionRepository, UserTopicRepository userTopicRepository) {
         this.questionnaireRepository = questionnaireRepository;
         this.userRepository = userRepository;
 
         this.questionRepository = questionRepository;
         this.userQuestionRepository = userQuestionRepository;
+        this.userTopicRepository = userTopicRepository;
     }
 
 
@@ -51,11 +46,15 @@ public class QuestionnaireServiceImpl implements QuestionnaireService {
         if(!Objects.equals(questionnaire.getUser().getId(), user.getId())) {
             throw new RuntimeException("This questionnaire doesn't belongs to userId: " + user.getId());
         }
-        if(questionnaire.getAnsweredAt()!=null){
+        if(questionnaire.getNumberOfQuestions()!=userAnswers.size()) {
+            throw new RuntimeException("This questionnaire doesn't contain all questionAnswers: " + questionnaire.getNumberOfQuestions()+" "+userAnswers.size());
+        }
+       /* if(questionnaire.getAnsweredAt()!=null){
             throw new RuntimeException("This questionnaire has already been corrected!");
 
-        }
+        }*/
         int numberCorrectAnswers=0;
+        Map<Integer,Double> userRanksMap=new HashMap<>();
         for(Map<String, Object> userAnswer:userAnswers) {
             String questionId=(String)userAnswer.get("questionId");
             List<Integer> userAnswersId=(List<Integer>) userAnswer.get("answersId");
@@ -79,6 +78,7 @@ public class QuestionnaireServiceImpl implements QuestionnaireService {
                 }
             }
             if(correct) numberCorrectAnswers+=1;
+            updateUserRankMap(user,question,correct,userRanksMap);
             UserQuestion userQuestion=userQuestionRepository.findByQuestion_IdAndUser_Id(questionId,user.getId());
             if(userQuestion==null) {
                 UserQuestion newUserQuestion=UserQuestion.builder()
@@ -97,7 +97,15 @@ public class QuestionnaireServiceImpl implements QuestionnaireService {
                 userQuestionRepository.save(userQuestion);
             }
         }
+        System.out.println("******** final userRankmap " + userRanksMap);
+        userRanksMap.forEach((key,value)->{
+            UserTopic userTopic=userTopicRepository.findByUser_IdAndTopic_Id(user.getId(), key);
+            if (userTopic == null) {
+                throw new RuntimeException("This userTopic doesn't exist with this topicId : " + key);
+            }
+            userTopic.setRank(userTopic.getRank()+value);
 
+        });
         questionnaire.setCompleted(true);
         questionnaire.setNumberCorrectedAnswers(numberCorrectAnswers);
         questionnaire.setAnsweredAt(LocalDateTime.now());
@@ -123,4 +131,35 @@ public class QuestionnaireServiceImpl implements QuestionnaireService {
 
     }
 
+    void updateUserRankMap(UserEntity user, Question question, boolean correct, Map<Integer, Double> userRanksMap) {
+        try{
+            UserTopic userTopic=userTopicRepository.findByUser_IdAndTopic_Id(user.getId(),question.getTopic().getId());
+            double userRank=userTopic.getRank();
+            double questionDiffLevel= (double) question.getDifficulty_level() /10;
+            double diff=(0.45*(questionDiffLevel-userRank)+0.5-(correct?0:1))/7;
+            BigDecimal bd = new BigDecimal(diff).setScale(3, RoundingMode.HALF_UP);
+            double doubleResult = bd.doubleValue();
+
+            System.out.println(questionDiffLevel+" - "+userRank+" = "+doubleResult+correct);
+            System.out.println("So the old user rank is and the new will be : "+userRank+" --> "+(doubleResult+userRank));
+
+            if(userRanksMap.containsKey(question.getTopic().getId())) {
+                double newMapRank=(userRanksMap.get(question.getTopic().getId())+diff)/2;
+                BigDecimal newBd = new BigDecimal(newMapRank).setScale(3, RoundingMode.HALF_UP);
+                userRanksMap.put(question.getTopic().getId(),newBd.doubleValue());
+            }else{
+                userRanksMap.put(question.getTopic().getId(),doubleResult);
+            }
+            System.out.println("+++++++++NEW userMapranks: "+userRanksMap);
+
+        }
+        catch(Exception e){
+            throw new RuntimeException("Error while updating user rank for questionId: " + question.getId());
+
+        }
+    }
+
 }
+
+
+//   {3=0.087, 4=0.091, 10=0.067, 11=0.127, 12=0.116}
