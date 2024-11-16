@@ -1,4 +1,5 @@
 package SGBD_Project.example.LearnCode.Dto;
+import SGBD_Project.example.LearnCode.Models.PostUserAction;
 import SGBD_Project.example.LearnCode.Models.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -23,7 +26,7 @@ public class UserDto {
     private LocalDateTime createdDate;
     private LocalDateTime updatedDate;
     private String token;
-
+    private Set<PostUserAction> postUserActions = new HashSet<>();
 
     public static UserDto userToDto(UserEntity userEntity) {
         return UserDto.builder()

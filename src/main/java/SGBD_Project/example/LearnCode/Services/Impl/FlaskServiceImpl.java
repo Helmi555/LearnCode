@@ -44,7 +44,6 @@ public class FlaskServiceImpl implements FlaskService {
         this.questionnaireRepository = questionnaireRepository;
     }
 
-
     /*@PostConstruct*/
     @Transactional
     public Map<String,Object> sendRequestToFlask(String email, Set<Integer> topics, Integer questionQuantity) {
@@ -105,7 +104,7 @@ public class FlaskServiceImpl implements FlaskService {
         System.out.println("questionQuantity: "+questionQuantity);
         payload.put("questions", questionsArray);
         payload.put("topics", topicsArray);
-        payload.put("questionQuantity",questionQuantity);
+        payload.put("questionQuantity",questionQuantity+10);
         System.out.println("And the payload is  \n"+payload);
         // Create the JSON payload
 

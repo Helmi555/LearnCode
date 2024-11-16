@@ -30,7 +30,7 @@ public class QuestionnaireController {
     }
 
 
-    @GetMapping("getNewQuestionnaire")
+    @PostMapping("getNewQuestionnaire")
     public ResponseEntity<?> getNewQuestionnaire(@RequestBody Map<String,Object> requestBody, @RequestHeader("Authorization") String authorizationHeader) {
         // Get user details, questions, and topics from the request
         String token = authorizationHeader.substring(7); // Remove "Bearer " prefix
@@ -70,7 +70,7 @@ public class QuestionnaireController {
 
             QuestionnaireDto questionDto =questionnaireService.correctQuestionnaire(email,questionnaireId,questions);
             msg.put("message","Note calculated successfully");
-            msg.put("Questionnaire",questionDto);
+            msg.put("questionnaire",questionDto);
             return ResponseEntity.ok(msg);
 
         }catch (Exception e){
