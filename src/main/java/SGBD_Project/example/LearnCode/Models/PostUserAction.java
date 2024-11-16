@@ -1,5 +1,7 @@
 package SGBD_Project.example.LearnCode.Models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,6 +31,7 @@ public class PostUserAction {
 
     @ManyToOne
     @JoinColumn(name = "post_id", nullable = false)
+   //@JsonBackReference // Ignores serialization of the "back-reference" to Post
     private Post post;
 
     @ManyToOne
@@ -39,7 +42,7 @@ public class PostUserAction {
 
     private Boolean downvoted = false;
 
-    private Boolean seen = false;
+    private Boolean seen = true;
 
     private Timestamp seenAt;
 

@@ -2,6 +2,8 @@ package SGBD_Project.example.LearnCode.Models;
 
 
 import SGBD_Project.example.LearnCode.Models.Enums.Type;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jdk.jfr.Category;
 import lombok.AllArgsConstructor;
@@ -67,6 +69,8 @@ public class Post {
 
     // Relations
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    //@JsonManagedReference // Manages serialization of this side of the relationship
+    //@JsonIgnore // Temporarily ignore actions during serialization
     private Set<PostUserAction> actions = new HashSet<>();
 
 }

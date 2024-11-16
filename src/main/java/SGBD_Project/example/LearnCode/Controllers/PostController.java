@@ -140,4 +140,56 @@ public class PostController {
         }
 
     }
+
+    @PostMapping("upvotePostById/{postId}")
+    public ResponseEntity<?> upvotePostById(@PathVariable Long postId,@RequestHeader("Authorization") String authorizationHeader){
+        Map<String,Object> msg = new HashMap<>();
+        String token = authorizationHeader.substring(7);
+        String email = jwtUtil.extractEmail(token);
+        if (email == null || email.isEmpty()) {
+            msg.put("message","No email found");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+        if(postId==null){
+            msg.put("message","No Post founded for up voting it");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+        try{
+            Map<String,Object> postDto =postService.upvotePostById(email,postId);
+            msg.put("message","Successfully Upvoted Post");
+            msg.put("post",postDto);
+            return ResponseEntity.status(HttpStatus.OK).body(msg);
+
+        }
+        catch(Exception e){
+            msg.put("message",e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg);
+        }
+    }
+
+    @PostMapping("downvotePostById/{postId}")
+    public ResponseEntity<?> downvotePostById(@PathVariable Long postId,@RequestHeader("Authorization") String authorizationHeader){
+        Map<String,Object> msg = new HashMap<>();
+        String token = authorizationHeader.substring(7);
+        String email = jwtUtil.extractEmail(token);
+        if (email == null || email.isEmpty()) {
+            msg.put("message","No email found");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+        if(postId==null){
+            msg.put("message","No Post founded for up voting it");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+        try{
+            Map<String,Object> postDto =postService.downvotePostById(email,postId);
+            msg.put("message","Successfully downVoted Post");
+            msg.put("post",postDto);
+            return ResponseEntity.status(HttpStatus.OK).body(msg);
+
+        }
+        catch(Exception e){
+            msg.put("message",e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(msg);
+        }
+    }
 }

@@ -12,10 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -104,6 +101,7 @@ public class PostServiceImpl implements PostService {
             System.out.println("Sorted list: " + sortedByMostUpvoted);
             List<Post> firstXElements = posts.subList(0, Math.min(numberOfPosts, posts.size()));
 
+            Set<PostDto> returnPostDtos=new HashSet<>();
             for(Post post:firstXElements){
                 PostUserAction postUserActionOld=postUserRepository.findByUser_IdAndPost_Id(user.getId(),post.getId()).orElse(null);
                 if(postUserActionOld==null) {
@@ -116,17 +114,115 @@ public class PostServiceImpl implements PostService {
                             .user(user)
                             .post(post)
                             .build();
-                    postUserRepository.save(postUserAction);
-                    postRepository.save(post);
-                }
+                    System.out.println("aaaaaaaaaaaaaaaaaaaaaa");
 
+                    postUserRepository.save(postUserAction);
+                    Set<PostUserAction> postUserActions=post.getActions();
+                    postUserActions.add(postUserAction);
+                    post.setActions(postUserActions);
+
+                    postRepository.save(post);
+                    System.out.println("22222222222222222222");
+
+                    returnPostDtos.add(PostDto.mapToDtoWithVotes(post,postUserAction.getUpvoted(),postUserAction.getDownvoted()));
+                }else{
+                    returnPostDtos.add(PostDto.mapToDtoWithVotes(post,postUserActionOld.getUpvoted(),postUserActionOld.getDownvoted()));
+                }
             }
-            return firstXElements.stream().map(PostDto::mapToDto).collect(Collectors.toSet());
+            return returnPostDtos;
         }
         catch(Exception e){
             throw new RuntimeException(e.getMessage());
         }
 
+    }
+
+    @Override
+    public Map<String, Object> upvotePostById(String email, Long postId) {
+        UserEntity user=userRepository.findByEmail(email).orElse(null);
+        if(user==null){
+            throw new RuntimeException("User not found");
+        }
+        Post post=postRepository.findById(postId).orElse(null);
+        if(post==null){
+            throw new RuntimeException("Post not found id: "+postId);
+        }
+        PostUserAction postUserAction=postUserRepository.findByUser_IdAndPost_Id(user.getId(),postId).orElse(null);
+        if(postUserAction==null){
+            throw new RuntimeException("UserPost not found postId: "+postId+" user: "+user.getId());
+        }
+        if(!postUserAction.getSeen()){
+            postUserAction.setSeen(true);
+        }
+        if(postUserAction.getUpvoted()){
+            postUserAction.setUpvoted(false);
+            post.setUpVoteNumber(post.getUpVoteNumber()-1);
+
+        }
+        else{
+            if(postUserAction.getDownvoted()){
+                postUserAction.setDownvoted(false);
+                post.setDownVoteNumber(post.getDownVoteNumber()-1);
+            }
+            postUserAction.setUpvoted(true);
+            post.setUpVoteNumber(post.getUpVoteNumber()+1);
+        }
+        postUserRepository.save(postUserAction);
+        postRepository.save(post);
+
+        Map<String,Object> postDto=new HashMap<>();
+        postDto.put("id",postId);
+        postDto.put("upVoteNumber",post.getUpVoteNumber());
+        postDto.put("upvoted",postUserAction.getUpvoted());
+        postDto.put("seeNumber",post.getSeenNumber());
+        postDto.put("downVoteNumber",post.getDownVoteNumber());
+        postDto.put("downvoted",postUserAction.getDownvoted());
+        return postDto;
+
+    }
+
+    @Override
+    public Map<String, Object> downvotePostById(String email, Long postId) {
+        UserEntity user=userRepository.findByEmail(email).orElse(null);
+        if(user==null){
+            throw new RuntimeException("User not found");
+        }
+        Post post=postRepository.findById(postId).orElse(null);
+        if(post==null){
+            throw new RuntimeException("Post not found id: "+postId);
+        }
+        PostUserAction postUserAction=postUserRepository.findByUser_IdAndPost_Id(user.getId(),postId).orElse(null);
+        if(postUserAction==null){
+            throw new RuntimeException("UserPost not found postId: "+postId+" user: "+user.getId());
+        }
+        if(!postUserAction.getSeen()){
+            postUserAction.setSeen(true);
+        }
+        if(postUserAction.getDownvoted()){
+            postUserAction.setDownvoted(false);
+            post.setDownVoteNumber(post.getDownVoteNumber()-1);
+
+        }
+        else{
+            if(postUserAction.getUpvoted()){
+                postUserAction.setUpvoted(false);
+                post.setUpVoteNumber(post.getUpVoteNumber()-1);
+            }
+            postUserAction.setDownvoted(true);
+            post.setDownVoteNumber(post.getDownVoteNumber()+1);
+        }
+
+        postUserRepository.save(postUserAction);
+        postRepository.save(post);
+
+        Map<String,Object> postDto=new HashMap<>();
+        postDto.put("id",postId);
+        postDto.put("upVoteNumber",post.getUpVoteNumber());
+        postDto.put("upvoted",postUserAction.getUpvoted());
+        postDto.put("seeNumber",post.getSeenNumber());
+        postDto.put("downVoteNumber",post.getDownVoteNumber());
+        postDto.put("downvoted",postUserAction.getDownvoted());
+        return postDto;
     }
 
     Set<Long> getWantedPostsByTopic(UserEntity user,Set<Long> cachedPostIds){

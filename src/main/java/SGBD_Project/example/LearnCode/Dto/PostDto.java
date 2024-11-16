@@ -52,8 +52,32 @@ public class PostDto {
 
     private Boolean isActive = true;
 
-    private Set<PostUserAction> actions = new HashSet<>();
+    private Boolean upVoted = false;
 
+    private Boolean downVoted = false;
+
+
+    public static PostDto mapToDtoWithVotes(Post post,Boolean upVoted,Boolean downVoted) {
+        return PostDto.builder()
+                .id(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .author(post.getAuthor())
+                .date(post.getDate())
+                .tags(post.getTags())
+                .links(post.getLinks())
+                .type(post.getType() != null ? post.getType().name() : null) // Convert Enum to String
+                .mediaUrls(post.getMediaUrls())
+                .updatedAt(post.getUpdatedAt())
+                .createdAt(post.getCreatedAt())
+                .upVoteNumber(post.getUpVoteNumber())
+                .downVoteNumber(post.getDownVoteNumber())
+                .seenNumber(post.getSeenNumber())
+                .isActive(post.getIsActive())
+                .upVoted(upVoted)
+                .downVoted(downVoted)
+                .build();
+    }
 
     public static PostDto mapToDto(Post post) {
         return PostDto.builder()
@@ -72,7 +96,6 @@ public class PostDto {
                 .downVoteNumber(post.getDownVoteNumber())
                 .seenNumber(post.getSeenNumber())
                 .isActive(post.getIsActive())
-                .actions(post.getActions())
                 .build();
     }
 
@@ -94,7 +117,6 @@ public class PostDto {
         post.setDownVoteNumber(postDto.getDownVoteNumber());
         post.setSeenNumber(postDto.getSeenNumber());
         post.setIsActive(postDto.getIsActive());
-        post.setActions(postDto.getActions());
         return post;
     }
 
