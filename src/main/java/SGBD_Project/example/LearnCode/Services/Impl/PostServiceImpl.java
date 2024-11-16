@@ -80,61 +80,49 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Set<PostDto> getNewPosts(String email, Set<Long> cachedPostIds, int numberOfPosts) {
-        UserEntity user=userRepository.findByEmail(email).orElse(null);
-        if(user==null){
-            throw new RuntimeException("User not found");
-        }
-        for(Long postId : cachedPostIds){
-            Post post=postRepository.findById(postId).orElse(null);
-            if(post==null){
-                throw new RuntimeException("Post not found id: "+postId);
-            }
-        }
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        try{
-            Set<Long> wantedPostsByTopic=getWantedPostsByTopic(user,cachedPostIds);
-            System.out.println("wanted posts "+wantedPostsByTopic);
-            List<Post> posts= postRepository.findAllById(wantedPostsByTopic);
-            System.out.println("Posts are : "+posts);
-
+        try {
+            Set<Long> wantedPostsByTopic = getWantedPostsByTopic(user, cachedPostIds);
+            List<Post> posts = postRepository.findAllById(wantedPostsByTopic);
             List<Post> sortedByMostUpvoted = PostUtils.sortPostsByAllCriteria(posts);
-            System.out.println("Sorted list: " + sortedByMostUpvoted);
-            List<Post> firstXElements = posts.subList(0, Math.min(numberOfPosts, posts.size()));
+            List<Post> firstXElements = sortedByMostUpvoted.subList(0, Math.min(numberOfPosts, sortedByMostUpvoted.size()));
 
-            Set<PostDto> returnPostDtos=new HashSet<>();
-            for(Post post:firstXElements){
-                PostUserAction postUserActionOld=postUserRepository.findByUser_IdAndPost_Id(user.getId(),post.getId()).orElse(null);
-                if(postUserActionOld==null) {
-                    post.setSeenNumber(post.getSeenNumber() + 1);
-                    PostUserAction postUserAction = PostUserAction.builder()
-                            .seen(true)
-                            .seenAt(Timestamp.valueOf(LocalDateTime.now()))
-                            .upvoted(false)
-                            .downvoted(false)
-                            .user(user)
-                            .post(post)
-                            .build();
-                    System.out.println("aaaaaaaaaaaaaaaaaaaaaa");
+            Set<PostDto> returnPostDtos = new HashSet<>();
 
-                    postUserRepository.save(postUserAction);
-                    Set<PostUserAction> postUserActions=post.getActions();
-                    postUserActions.add(postUserAction);
-                    post.setActions(postUserActions);
+            for (Post post : firstXElements) {
+                PostUserAction postUserAction = postUserRepository
+                        .findByUser_IdAndPost_Id(user.getId(), post.getId())
+                        .orElseGet(() -> {
+                            post.setSeenNumber(post.getSeenNumber() + 1);
 
-                    postRepository.save(post);
-                    System.out.println("22222222222222222222");
+                            PostUserAction newAction = PostUserAction.builder()
+                                    .seen(true)
+                                    .seenAt(Timestamp.valueOf(LocalDateTime.now()))
+                                    .upvoted(false)
+                                    .downvoted(false)
+                                    .user(user)
+                                    .post(post)
+                                    .build();
 
-                    returnPostDtos.add(PostDto.mapToDtoWithVotes(post,postUserAction.getUpvoted(),postUserAction.getDownvoted()));
-                }else{
-                    returnPostDtos.add(PostDto.mapToDtoWithVotes(post,postUserActionOld.getUpvoted(),postUserActionOld.getDownvoted()));
-                }
+                            postUserRepository.save(newAction);
+                            postRepository.save(post);
+
+                            return newAction;
+                        });
+
+                returnPostDtos.add(PostDto.mapToDtoWithVotes(
+                        post,
+                        postUserAction.getUpvoted(),
+                        postUserAction.getDownvoted()
+                ));
             }
+
             return returnPostDtos;
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
-
     }
 
     @Override

@@ -3,13 +3,11 @@ package SGBD_Project.example.LearnCode.Models;
 
 import SGBD_Project.example.LearnCode.Models.Enums.Type;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jdk.jfr.Category;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -20,7 +18,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "post")
 @NoArgsConstructor
@@ -67,10 +66,10 @@ public class Post {
 
     private Boolean isActive = true;
 
-    // Relations
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    //@JsonManagedReference // Manages serialization of this side of the relationship
-    //@JsonIgnore // Temporarily ignore actions during serialization
+    @OneToMany(mappedBy = "post", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
+    @JsonIgnoreProperties("post") // Add this annotation
     private Set<PostUserAction> actions = new HashSet<>();
+
+
 
 }
