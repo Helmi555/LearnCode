@@ -103,7 +103,13 @@ public class QuestionnaireServiceImpl implements QuestionnaireService {
             if (userTopic == null) {
                 throw new RuntimeException("This userTopic doesn't exist with this topicId : " + key);
             }
-            userTopic.setRank(userTopic.getRank()+value);
+
+            // UPDATE userRank *********
+            double newRank=userTopic.getRank()+value;
+            BigDecimal rankBD= new BigDecimal(newRank).setScale(3, BigDecimal.ROUND_HALF_UP);
+            double newRankResult=Math.min(rankBD.doubleValue(),0.9);
+            newRankResult=Math.max(newRankResult,0.1);
+            userTopic.setRank(newRankResult);
 
         });
         questionnaire.setCompleted(true);

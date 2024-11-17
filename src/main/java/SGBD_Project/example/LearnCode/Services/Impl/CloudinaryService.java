@@ -21,26 +21,48 @@ public class CloudinaryService {
         this.cloudinary = cloudinary;
     }
 
-
     public String uploadFileToFolder(MultipartFile file, String folderPath) throws IOException {
-        // Get original file name without the extension
+        // Get the original file name and type (extension)
         String originalFileName = file.getOriginalFilename();
-        if (originalFileName != null && originalFileName.contains(".")) {
-            originalFileName = originalFileName.substring(0, originalFileName.lastIndexOf('.'));
+        if (originalFileName == null || !originalFileName.contains(".")) {
+            throw new IOException("File has no extension");
         }
+
+        String extension = originalFileName.substring(originalFileName.lastIndexOf(".") + 1).toLowerCase();
 
         // Add timestamp to make the file name unique
         String timestamp = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss:SSS").format(new Date());
-        String publicId = folderPath + "/" + originalFileName + "_" + timestamp;
+        String publicId = folderPath + "/" + originalFileName.substring(0, originalFileName.lastIndexOf('.')) + "_" + timestamp;
 
-        // Set the public ID in the upload options
+        // Determine if the file is an image or a video based on the extension
+        String resourceType = "image"; // Default to image
+        if (isVideoFile(extension)) {
+            resourceType = "video";
+        }
+
+        // Set the public ID and resource type (dynamic based on the file type)
         Map<String, Object> options = ObjectUtils.asMap(
                 "folder", folderPath,
-                "public_id", publicId
+                "public_id", publicId,
+                "resource_type", resourceType
         );
 
+        // Upload the file to Cloudinary
         Map uploadResult = cloudinary.uploader().upload(file.getBytes(), options);
-        return uploadResult.get("url").toString(); // Returns the URL of the uploaded image
+
+        // Return the URL of the uploaded file (image or video)
+        return uploadResult.get("url").toString();
+    }
+
+    // Helper method to check if the file extension corresponds to a video
+    private boolean isVideoFile(String extension) {
+        String[] videoExtensions = {"mp4", "avi", "mov", "flv", "mkv", "wmv"};
+        for (String ext : videoExtensions) {
+            if (ext.equalsIgnoreCase(extension)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public String deleteFile(String publicId) throws IOException {
