@@ -49,10 +49,10 @@ public class QuestionnaireServiceImpl implements QuestionnaireService {
         if(questionnaire.getNumberOfQuestions()!=userAnswers.size()) {
             throw new RuntimeException("This questionnaire doesn't contain all questionAnswers: " + questionnaire.getNumberOfQuestions()+" "+userAnswers.size());
         }
-       /* if(questionnaire.getAnsweredAt()!=null){
+        if(questionnaire.getAnsweredAt()!=null){
             throw new RuntimeException("This questionnaire has already been corrected!");
 
-        }*/
+        }
         int numberCorrectAnswers=0;
         Map<Integer,Double> userRanksMap=new HashMap<>();
         for(Map<String, Object> userAnswer:userAnswers) {
