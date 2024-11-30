@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import org.json.JSONArray;
+import org.json.JSONString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -33,7 +34,7 @@ public class FlaskServiceImpl implements FlaskService {
     private final QuestionnaireRepository questionnaireRepository;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String flaskUrl = "http://localhost:5000/predict"; // Flask endpoint
+    private final String flaskUrl = "http://localhost:5000/"; // Flask endpoint
     private final TopicRepository topicRepository;
 
     @Autowired
@@ -134,7 +135,7 @@ public class FlaskServiceImpl implements FlaskService {
 
         // Send POST request to Flask microservices
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(flaskUrl, request, String.class);
+            ResponseEntity<String> response = restTemplate.postForEntity(flaskUrl+"predict", request, String.class);
             if (!response.getStatusCode().is2xxSuccessful()) {
                 throw new RuntimeException("An error occured " + response.getStatusCode());
             }
@@ -189,6 +190,36 @@ public class FlaskServiceImpl implements FlaskService {
             return new HashMap<>();
         }
 
+    }
+
+    public Map<String,Object> sendChatBot(String question){
+
+        JSONObject payload = new JSONObject();
+
+        payload.put("question",question);
+        System.out.println("And the payload is  \n"+payload);
+        // Create the JSON payload
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // Create request houni
+        HttpEntity<String> request = new HttpEntity<>(payload.toString(), headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(flaskUrl+"ChatBot", request, String.class);
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("An error occured " + response.getStatusCode());
+            }
+            System.out.println("Response from flask: " + response);
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> flaskResponse = objectMapper.readValue(response.getBody(), new TypeReference<Map<String, Object>>() {});
+            return flaskResponse;
+
+
+        }catch (Exception e) {
+            System.out.println("Exception occurred: " + e.getMessage());
+            return new HashMap<>();}
     }
 
 

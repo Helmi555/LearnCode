@@ -61,7 +61,8 @@ public class UserEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<PostUserAction> postUserActions = new HashSet<>();
 
-
+    @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Conversation> conversations = new ArrayList<>();
 
 
     public void addToken(String token) {
