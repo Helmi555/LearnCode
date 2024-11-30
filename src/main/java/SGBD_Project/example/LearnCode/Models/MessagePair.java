@@ -34,9 +34,18 @@ public class MessagePair {
     @UpdateTimestamp
     private Timestamp updatedAt;
 
+    private int isLiked=0;
+
     @ManyToOne
     @JoinColumn(name = "conversation_id")
     @JsonBackReference
     private Conversation conversation;
+
+    public void setIsLiked(int isLiked) {
+        if (isLiked < -1 || isLiked > 1) {
+            throw new IllegalArgumentException("Invalid value for isLiked. Allowed: -1, 0, 1.");
+        }
+        this.isLiked = isLiked;
+    }
 
 }

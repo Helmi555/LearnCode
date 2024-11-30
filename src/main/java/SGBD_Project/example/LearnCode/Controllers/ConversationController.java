@@ -4,6 +4,7 @@ package SGBD_Project.example.LearnCode.Controllers;
 import SGBD_Project.example.LearnCode.Dto.ConversationDto;
 import SGBD_Project.example.LearnCode.Models.Conversation;
 import SGBD_Project.example.LearnCode.Models.MessagePair;
+import SGBD_Project.example.LearnCode.Repositories.MessagePairRepository;
 import SGBD_Project.example.LearnCode.Security.JwtUtil;
 import SGBD_Project.example.LearnCode.Services.ConversationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/api/v1/conversations/")
@@ -22,12 +24,14 @@ public class ConversationController {
 
     private final ConversationService conversationService;
     private final JwtUtil jwtUtil;
+    private final MessagePairRepository messagePairRepository;
 
 
     @Autowired
-    public ConversationController(ConversationService conversationService, JwtUtil jwtUtil) {
+    public ConversationController(ConversationService conversationService, JwtUtil jwtUtil, MessagePairRepository messagePairRepository) {
         this.conversationService = conversationService;
         this.jwtUtil = jwtUtil;
+        this.messagePairRepository = messagePairRepository;
     }
 
 
@@ -45,8 +49,16 @@ public class ConversationController {
             msg.put("message","Conversation Qt must be greater than 0");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
         }
+        List<Object> rawIds = (List<Object>) requestBody.get("existedConversationsId");
+        List<Long> existedConversationsId = rawIds.stream()
+                .map(id -> Long.valueOf(String.valueOf(id))) // Convert each element to Long
+                .collect(Collectors.toList());
+        if(existedConversationsId==null){
+            msg.put("message","No existed conversations");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
         try{
-            List<ConversationDto> conversationDtos=conversationService.getConversations(email,conversationsQt);
+            List<ConversationDto> conversationDtos=conversationService.getConversations(email,conversationsQt,existedConversationsId);
             msg.put("conversations",conversationDtos);
             msg.put("message","Successfully retrieved conversations");
             return ResponseEntity.status(HttpStatus.OK).body(msg);
@@ -59,8 +71,8 @@ public class ConversationController {
 
  }
 
-    @GetMapping("getConversationById/{conversationId}")
-    public ResponseEntity<?> getConversationById(@PathVariable Long conversationId, @RequestHeader ("Authorization") String authorizationHeader ) {
+    @PostMapping("getConversationById")
+    public ResponseEntity<?> getConversationById(@RequestBody Map<String,Object> requestBody, @RequestHeader ("Authorization") String authorizationHeader ) {
         String token = authorizationHeader.substring(7); // Remove "Bearer " prefix
         String email = jwtUtil.extractEmail(token);
         Map<String,Object> msg=new HashMap<>();
@@ -68,12 +80,27 @@ public class ConversationController {
             msg.put("message","No email in the token");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(msg);
         }
+        Number ids = (Number) requestBody.get("conversationId");
+        Long conversationId = ids.longValue();
+        int messagePairQt = (int) requestBody.get("messagePairQt");
+        List<Object> rawIds = (List<Object>) requestBody.get("existedMessagePairsId");
+        List<Long> existedMessagePairsId = rawIds.stream()
+                .map(id -> Long.valueOf(String.valueOf(id)))
+                .collect(Collectors.toList());
         if(conversationId<=0){
             msg.put("message","ConversationId must be greater than 0");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
         }
+        if(messagePairQt<=0){
+            msg.put("message","messagePair Qt must be greater than 0");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+        if(existedMessagePairsId==null){
+            msg.put("message","No existed conversations");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
         try{
-            ConversationDto conversationDto=conversationService.getConversationById(email,conversationId);
+            ConversationDto conversationDto=conversationService.getConversationById(email,conversationId,messagePairQt,existedMessagePairsId);
             msg.put("conversation",conversationDto);
             msg.put("message","Successfully retrieved conversation");
             return ResponseEntity.status(HttpStatus.OK).body(msg);
@@ -148,4 +175,74 @@ public class ConversationController {
         }
 
     }
+
+    @PostMapping("likeAnswer")
+    public ResponseEntity<?> likeAnswer(@RequestBody  Map<String,Object> requestBody, @RequestHeader ("Authorization") String authorizationHeader ) {
+        String token = authorizationHeader.substring(7);
+        String email = jwtUtil.extractEmail(token);
+        Map<String,Object> msg=new HashMap<>();
+        if(email.isBlank()){
+            msg.put("message","No email in the token");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(msg);
+        }
+        Number id = (Number) requestBody.get("conversationId");
+        Long conversationId = id.longValue();
+        id=(Number) requestBody.get("messagePairId");
+        Long messagePairId = id.longValue();
+        if(conversationId<=0){
+            msg.put("message","ConversationId must be greater than 0");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+        if(messagePairId<=0){
+            msg.put("message","MessagePairId must be greater than 0");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+        try{
+            MessagePair messagePair=conversationService.likeAnswer(email,conversationId,messagePairId);
+            msg.put("messagePair",messagePair);
+            msg.put("message","Successfully liked answer");
+            return ResponseEntity.status(HttpStatus.OK).body(msg);
+
+        }catch (Exception e){
+            msg.put("message",e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+
+    }
+
+
+    @PostMapping("dislikeAnswer")
+    public ResponseEntity<?> dislikeAnswer(@RequestBody  Map<String,Object> requestBody, @RequestHeader ("Authorization") String authorizationHeader ) {
+        String token = authorizationHeader.substring(7);
+        String email = jwtUtil.extractEmail(token);
+        Map<String,Object> msg=new HashMap<>();
+        if(email.isBlank()){
+            msg.put("message","No email in the token");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(msg);
+        }
+        Number id = (Number) requestBody.get("conversationId");
+        Long conversationId = id.longValue();
+        id=(Number) requestBody.get("messagePairId");
+        Long messagePairId = id.longValue();
+        if(conversationId<=0){
+            msg.put("message","ConversationId must be greater than 0");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+        if(messagePairId<=0){
+            msg.put("message","MessagePairId must be greater than 0");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+        try{
+            MessagePair messagePair=conversationService.dislikeAnswer(email,conversationId,messagePairId);
+            msg.put("messagePair",messagePair);
+            msg.put("message","Successfully liked answer");
+            return ResponseEntity.status(HttpStatus.OK).body(msg);
+
+        }catch (Exception e){
+            msg.put("message",e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(msg);
+        }
+
+    }
+
 }

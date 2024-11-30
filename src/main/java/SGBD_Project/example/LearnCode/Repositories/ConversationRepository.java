@@ -13,5 +13,9 @@ public interface ConversationRepository extends JpaRepository<Conversation,Long>
     @Query("SELECT c FROM Conversation c WHERE c.user.id = :userId ORDER BY c.createdAt DESC")
     List<Conversation> findTopConversationsByUserId(@Param("userId") String userId, Pageable pageable);
 
+    @Query(value = "SELECT * FROM conversation WHERE user_id = :userId ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)
+    List<Conversation> findRecentConversationsByUserId(@Param("userId") String userId, @Param("limit") int limit);
+
+
     Optional<Conversation> findByIdAndUserId( Long conversationId,String userId);
 }
